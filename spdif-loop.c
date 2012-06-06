@@ -7,7 +7,7 @@
 
 #define IO_BUFFER_SIZE	32768
 
-struct spdif_read_state {
+struct alsa_read_state {
 	AVFormatContext *ctx;
 	AVPacket	 pkt;
 	int		 offset;
@@ -23,9 +23,9 @@ usage(void)
 }
 
 static int
-spdif_reader(void *data, uint8_t *buf, int buf_size)
+alsa_reader(void *data, uint8_t *buf, int buf_size)
 {
-	struct spdif_read_state *st = data;
+	struct alsa_read_state *st = data;
 	int ret;
 
 	if (st->pkt.size <= 0) {
@@ -54,35 +54,35 @@ main(int argc, char **argv)
 	if (argc != 2)
 		usage();
 
-        char *in_dev = argv[1];
+        char *alsa_dev = argv[1];
 
 	av_register_all();
 	avcodec_register_all();
         avdevice_register_all();
 
-	AVInputFormat *in_fmt = av_find_input_format("alsa");
-	if (!in_fmt)
+	AVInputFormat *alsa_fmt = av_find_input_format("alsa");
+	if (!alsa_fmt)
 		return (3);
 
-	AVFormatContext *in_ctx = NULL;
-	if (avformat_open_input(&in_ctx, in_dev, in_fmt, NULL) != 0)
+	AVFormatContext *alsa_ctx = NULL;
+	if (avformat_open_input(&alsa_ctx, alsa_dev, alsa_fmt, NULL) != 0)
 		return (2);
 
 	AVFormatContext *spdif_ctx = avformat_alloc_context();
 	if (!spdif_ctx)
 		return (4);
 
-	const int spdif_buf_size = IO_BUFFER_SIZE;
-	unsigned char *spdif_buf = av_malloc(spdif_buf_size);
-	if (!spdif_buf)
+	const int alsa_buf_size = IO_BUFFER_SIZE;
+	unsigned char *alsa_buf = av_malloc(alsa_buf_size);
+	if (!alsa_buf)
 		return (5);
 
-	struct spdif_read_state read_state = {
-		.ctx = in_ctx,
+	struct alsa_read_state read_state = {
+		.ctx = alsa_ctx,
 	};
 	av_init_packet(&read_state.pkt);
 
-	spdif_ctx->pb = avio_alloc_context(spdif_buf, spdif_buf_size, 0, &read_state, spdif_reader, NULL, NULL);
+	spdif_ctx->pb = avio_alloc_context(alsa_buf, alsa_buf_size, 0, &read_state, alsa_reader, NULL, NULL);
 	if (!spdif_ctx->pb)
 		return (6);
 
@@ -91,6 +91,10 @@ main(int argc, char **argv)
 		return (8);
 	if (avformat_open_input(&spdif_ctx, "internal", spdif_fmt, NULL) != 0)
 		return (7);
+
+	printf("streams: %d\n", spdif_ctx->nb_streams);
+	for (int i = 0; i < spdif_ctx->nb_streams; ++i)
+		printf("\t%d.\t%d\n", i, spdif_ctx->streams[i]->codec->codec_id);
 
 	return (0);
 }
