@@ -1,0 +1,50 @@
+libavformat sequence
+
+init
+
+av_register_all();
+avcodec_register_all();
+
+sndinfmt = av_find_input_format("alsa");
+avformat_open_input(&sndinctx, "hw:1", sndinfmt, NULL);
+
+mock up another input for spdif demux:
+
+spdifctx = avformat_alloc_context();
+spdifctx->pb = avio_alloc_context(buf, bufsize, 0, mydata, read_cb, NULL, NULL);
+spdiffmt = av_find_input_format("spdif");
+avformat_open_input(&spdifctx, NULL, spidffmt, NULL);
+
+get decoder
+
+codec = avcodec_find_decoder(spdifcodec_id);
+codecctx = avcodec_alloc_context3(codec);
+avcodec_open2(&codecctx, codec, NULL);
+
+outframe = avcodec_alloc_frame();
+processed_len = avcodec_decode_audio4(codecctx, outframe, &got_frame, inpkt);
+
+/* advance inpkt by processed_len */
+
+codecctx->sample_rate;
+codecctx->channels;
+codecctx->sample_fmt;
+codecctx->channel_layout;
+
+outframe->data
+outframe->nb_samples
+outlen = av_samples_get_buffer_size(NULL, codecctx->channels, outframe->nb_samples, codecctx->sample_fmt, 1);
+
+play with libao
+
+ao_initialize();
+ao_sample_format outfmt;
+memset(&outfmt, 0, sizeof(outfmt));
+outfmt.bits = ...;
+outfmt.channels = ...;
+outfmt.rate = ...;
+outfmt.byte_format = ...;
+
+outdev = ao_open_live(ao_default_driver_id(), &outfmt, NULL);
+
+ao_play(outdev, buf, bufsize);
