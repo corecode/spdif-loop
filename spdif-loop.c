@@ -77,6 +77,7 @@ open_output(int driver_id, ao_option *dev_opts, AVCodecContext *s)
                 .channels = s->channels,
                 .rate = s->sample_rate,
                 .byte_format = AO_FMT_NATIVE,
+                .matrix = "L,R,C,BR,BL,LFE",
         };
 
 	return (ao_open_live(driver_id, &out_fmt, dev_opts));
@@ -194,6 +195,25 @@ main(int argc, char **argv)
 							   frame.nb_samples,
 							   spdif_codec_ctx->sample_fmt,
 							   1);
+
+#if DEBUG
+		int max = 0;
+		int16_t *fb = (void *)frame.data[0];
+		for (int i = 0; i < frame.nb_samples * spdif_codec_ctx->channels; ++i) {
+			int v = fb[i];
+			if (v < 0)
+				v = -v;
+			if (v > max)
+				max = v;
+		}
+
+		Debug latency
+		for (int i = 0; i < max / 100; ++i)
+			putchar('*');
+		printf("          \n");
+		//printf("%d\n", max);
+#endif
+			
 		if (!ao_play(out_dev, (void *)frame.data[0], framesize))
 			return (16);
 	}
