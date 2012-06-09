@@ -25,17 +25,18 @@ Run
 
 I run it like this:
 
-    ./spdif-loop hw:1 pulse alsa_output.usb-0d8c_USB_Sound_Device-00-Device.analog-surround51
+    ./spdif-loop hw:CARD=Device pulse alsa_output.usb-0d8c_USB_Sound_Device-00-Device.analog-surround51
 
-Alsa's hw:1 is my SPDIF input.  You can list your alsa devices with
+Alsa's `hw:CARD=Device` is my SPDIF input.  You can list your alsa devices with
 
     aplay -l
 
-I had to use `amixer` to set the capture source to SPIF:
+I had to use `amixer` to set the capture source to SPIF.  In this case
+`Device` is the alsa name of my SPDIF-in card:
 
-	amixer -c 1 scontrols                   # show controls
-	amixer -c 1 get 'PCM Capture Source'    # show options
-    amixer -c 1 set 'PCM Capture Source' 'IEC958 In'    # set input
+	amixer -c Device scontrols                   # show controls
+	amixer -c Device get 'PCM Capture Source'    # show options
+    amixer -c Device set 'PCM Capture Source' 'IEC958 In'    # set input
 
 
 Contact

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
@@ -110,18 +111,36 @@ main(int argc, char **argv)
 	if (!alsa_fmt)
 		return (3);
 
-	AVFormatContext *alsa_ctx = NULL;
+        AVInputFormat *spdif_fmt = av_find_input_format("spdif");
+        if (!spdif_fmt)
+                return (8);
+
+        const int alsa_buf_size = IO_BUFFER_SIZE;
+        unsigned char *alsa_buf = av_malloc(alsa_buf_size);
+        if (!alsa_buf)
+                return (5);
+
+        AVFormatContext *spdif_ctx = NULL;
+        AVFormatContext *alsa_ctx = NULL;
+
+	if (0) {
+retry:
+                printf("failure...\n");
+                if (spdif_ctx)
+			avformat_close_input(&spdif_ctx);
+		if (alsa_ctx)
+			avformat_close_input(&alsa_ctx);
+		sleep(1);
+		printf("retrying.\n");
+	}
+
+
+	spdif_ctx = avformat_alloc_context();
+        if (!spdif_ctx)
+                return (4);
+
 	if (avformat_open_input(&alsa_ctx, alsa_dev_name, alsa_fmt, NULL) != 0)
 		return (2);
-
-	AVFormatContext *spdif_ctx = avformat_alloc_context();
-	if (!spdif_ctx)
-		return (4);
-
-	const int alsa_buf_size = IO_BUFFER_SIZE;
-	unsigned char *alsa_buf = av_malloc(alsa_buf_size);
-	if (!alsa_buf)
-		return (5);
 
 	struct alsa_read_state read_state = {
 		.ctx = alsa_ctx,
@@ -132,9 +151,6 @@ main(int argc, char **argv)
 	if (!spdif_ctx->pb)
 		return (6);
 
-	AVInputFormat *spdif_fmt = av_find_input_format("spdif");
-	if (!spdif_fmt)
-		return (8);
 	if (avformat_open_input(&spdif_ctx, "internal", spdif_fmt, NULL) != 0)
 		return (7);
 
@@ -143,8 +159,11 @@ main(int argc, char **argv)
 	printf("detected spdif codec %s\n", avcodec_get_name(spdif_codec_id));
 
 	AVCodec *spdif_codec = avcodec_find_decoder(spdif_codec_id);
-	if (!spdif_codec)
-		return (9);
+	if (!spdif_codec) {
+		printf("could not find codec\n");
+		goto retry;
+	}
+
 	AVCodecContext *spdif_codec_ctx = avcodec_alloc_context3(spdif_codec);
 	if (!spdif_codec_ctx)
 		return (10);
@@ -163,8 +182,11 @@ main(int argc, char **argv)
 	for (;;) {
 		if (pkt.size == 0) {
 			av_free_packet(&pkt1);
-			if (av_read_frame(spdif_ctx, &pkt1) != 0)
-				return (13);
+			int e = av_read_frame(spdif_ctx, &pkt1);
+			if (e != 0) {
+				printf("reading frame failed: %d\n", e);
+				goto retry;
+			}
 			pkt = pkt1;
 		}
 
