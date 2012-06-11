@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <err.h>
+#include <getopt.h>
 
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
@@ -19,7 +21,7 @@ usage(void)
 {
 	fprintf(stderr,
 		"usage:\n"
-		"  spdif-loop <hw:alsa-input-dev> <alsa|pulse> <output-dev>\n");
+		"  spdif-loop [-t | -i <hw:alsa-input-dev>] -d <alsa|pulse> -o <output-dev>\n");
 	exit(1);
 }
 
@@ -66,17 +68,17 @@ probe_codec(AVFormatContext *s)
 }
 
 static ao_device *
-open_output(int driver_id, ao_option *dev_opts, AVCodecContext *s)
+open_output(int driver_id, ao_option *dev_opts, int bits, int channels, int sample_rate)
 {
         printf("%d bit, %d channels, %dHz\n",
-               av_get_bytes_per_sample(s->sample_fmt) * 8,
-               s->channels,
-               s->sample_rate);
+               bits,
+               channels,
+               sample_rate);
 
         ao_sample_format out_fmt = {
-                .bits = av_get_bytes_per_sample(s->sample_fmt) * 8,
-                .channels = s->channels,
-                .rate = s->sample_rate,
+                .bits = bits,
+                .channels = channels,
+                .rate = sample_rate,
                 .byte_format = AO_FMT_NATIVE,
                 .matrix = "L,R,C,BR,BL,LFE",
         };
@@ -87,38 +89,66 @@ open_output(int driver_id, ao_option *dev_opts, AVCodecContext *s)
 int
 main(int argc, char **argv)
 {
-	if (argc != 4)
-		usage();
+	int opt_test = 0;
+        char *alsa_dev_name = NULL;
+        char *out_driver_name = NULL;
+        char *out_dev_name = NULL;
 
-	char *alsa_dev_name = argv[1];
-	char *out_driver_name = argv[2];
-	char *out_dev_name = argv[3];
+	for (int opt = 0; (opt = getopt(argc, argv, "d:hi:o:t")) != -1;) {
+		switch (opt) {
+		case 'd':
+			out_driver_name = optarg;
+			break;
+		case 'i':
+			alsa_dev_name = optarg;
+			break;
+		case 'o':
+			out_dev_name = optarg;
+			break;
+		case 't':
+			opt_test = 1;
+			break;
+		default:
+			usage();
+			/* NOTREACHED */
+		}
+	}
+	argc -= optind;
+	argv += optind;
+		
+	if (argc != 0)
+		usage();
 
 	av_register_all();
 	avcodec_register_all();
 	avdevice_register_all();
 	ao_initialize();
 
-	int out_driver_id = ao_driver_id(out_driver_name);
-	if (out_driver_id < 0)
-		return (17);
-
 	ao_option *out_dev_opts = NULL;
-	if (!ao_append_option(&out_dev_opts, "dev", out_dev_name))
-		return (18);
+	if (out_dev_name) {
+		if (!ao_append_option(&out_dev_opts, "dev", out_dev_name))
+			errx(1, "cannot set output device `%s'", out_dev_name);
+	}
 
-	AVInputFormat *alsa_fmt = av_find_input_format("alsa");
+        int out_driver_id = ao_default_driver_id();
+        if (out_driver_name)
+                out_driver_id = ao_driver_id(out_driver_name);
+        if (out_driver_id < 0)
+                errx(1, "invalid output driver `%s'",
+                     out_driver_name ? out_driver_name : "default");
+
+        AVInputFormat *alsa_fmt = av_find_input_format("alsa");
 	if (!alsa_fmt)
-		return (3);
+		errx(1, "cannot find alsa input driver");
 
         AVInputFormat *spdif_fmt = av_find_input_format("spdif");
         if (!spdif_fmt)
-                return (8);
+                errx(1, "cannot find spdif demux driver");
 
         const int alsa_buf_size = IO_BUFFER_SIZE;
         unsigned char *alsa_buf = av_malloc(alsa_buf_size);
         if (!alsa_buf)
-                return (5);
+                errx(1, "cannot allocate input buffer");
 
         AVFormatContext *spdif_ctx = NULL;
         AVFormatContext *alsa_ctx = NULL;
@@ -142,10 +172,10 @@ retry:
 
 	spdif_ctx = avformat_alloc_context();
         if (!spdif_ctx)
-                return (4);
+                errx(1, "cannot allocate spdif context");
 
 	if (avformat_open_input(&alsa_ctx, alsa_dev_name, alsa_fmt, NULL) != 0)
-		return (2);
+		errx(1, "cannot open alsa input");
 
 	struct alsa_read_state read_state = {
 		.ctx = alsa_ctx,
@@ -154,10 +184,10 @@ retry:
 
 	spdif_ctx->pb = avio_alloc_context(alsa_buf, alsa_buf_size, 0, &read_state, alsa_reader, NULL, NULL);
 	if (!spdif_ctx->pb)
-		return (6);
+		errx(1, "cannot set up alsa reader");
 
 	if (avformat_open_input(&spdif_ctx, "internal", spdif_fmt, NULL) != 0)
-		return (7);
+		errx(1, "cannot open spdif input");
 
 	enum CodecID spdif_codec_id = probe_codec(spdif_ctx);
 
@@ -171,10 +201,10 @@ retry:
 
 	AVCodecContext *spdif_codec_ctx = avcodec_alloc_context3(spdif_codec);
 	if (!spdif_codec_ctx)
-		return (10);
+		errx(1, "cannot allocate codec");
 	spdif_codec_ctx->request_sample_fmt = AV_SAMPLE_FMT_S16;
 	if (avcodec_open2(spdif_codec_ctx, spdif_codec, NULL) != 0)
-		return (11);
+		errx(1, "cannot open codec");
 
 	AVPacket pkt, pkt1 = {.size = 0, .data = NULL};
 	av_init_packet(&pkt1);
@@ -197,7 +227,7 @@ retry:
 		int got_frame = 0;
 		int processed_len = avcodec_decode_audio4(spdif_codec_ctx, &frame, &got_frame, &pkt);
 		if (processed_len < 0)
-			return (14);
+			errx(1, "cannot decode input");
 		pkt.data += processed_len;
 		pkt.size -= processed_len;
 
@@ -210,9 +240,13 @@ retry:
 			 * We open the output only here, because we need a full frame decoded
 			 * before we can know the output format.
 			 */
-			out_dev = open_output(out_driver_id, out_dev_opts, spdif_codec_ctx);
+                        out_dev = open_output(out_driver_id,
+					      out_dev_opts,
+					      av_get_bytes_per_sample(spdif_codec_ctx->sample_fmt) * 8,
+					      spdif_codec_ctx->channels,
+					      spdif_codec_ctx->sample_rate);
 			if (!out_dev)
-				return (15);
+				errx(1, "cannot open audio output");
 		}
 
 		int framesize = av_samples_get_buffer_size(NULL,
