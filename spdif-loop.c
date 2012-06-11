@@ -166,6 +166,11 @@ main(int argc, char **argv)
 	if (argc != 0)
 		usage();
 
+	if (!(opt_test ^ !!alsa_dev_name)) {
+		fprintf(stderr, "please specify either input device or testing mode\n\n");
+		usage();
+	}
+
 	av_register_all();
 	avcodec_register_all();
 	avdevice_register_all();

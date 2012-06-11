@@ -25,7 +25,7 @@ Run
 
 I run it like this:
 
-    ./spdif-loop hw:CARD=Device pulse alsa_output.usb-0d8c_USB_Sound_Device-00-Device.analog-surround51
+    ./spdif-loop -i hw:CARD=Device -d pulse -o alsa_output.usb-0d8c_USB_Sound_Device-00-Device.analog-surround51
 
 Alsa's `hw:CARD=Device` is my SPDIF input.  You can list your alsa devices with
 
