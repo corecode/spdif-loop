@@ -122,6 +122,7 @@ main(int argc, char **argv)
 
         AVFormatContext *spdif_ctx = NULL;
         AVFormatContext *alsa_ctx = NULL;
+        ao_device *out_dev = NULL;
 
 	if (0) {
 retry:
@@ -130,6 +131,10 @@ retry:
 			avformat_close_input(&spdif_ctx);
 		if (alsa_ctx)
 			avformat_close_input(&alsa_ctx);
+		if (out_dev) {
+			ao_close(out_dev);
+			out_dev = NULL;
+		}
 		sleep(1);
 		printf("retrying.\n");
 	}
@@ -176,8 +181,6 @@ retry:
 	pkt = pkt1;
 
 	AVFrame frame;
-
-	ao_device *out_dev = NULL;
 
 	for (;;) {
 		if (pkt.size == 0) {
@@ -236,8 +239,9 @@ retry:
 		//printf("%d\n", max);
 #endif
 			
-		if (!ao_play(out_dev, (void *)frame.data[0], framesize))
-			return (16);
+		if (!ao_play(out_dev, (void *)frame.data[0], framesize)) {
+			goto retry;
+		}
 	}
 	
 	return (0);
