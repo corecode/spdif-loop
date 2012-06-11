@@ -80,10 +80,57 @@ open_output(int driver_id, ao_option *dev_opts, int bits, int channels, int samp
                 .channels = channels,
                 .rate = sample_rate,
                 .byte_format = AO_FMT_NATIVE,
-                .matrix = "L,R,C,BR,BL,LFE",
+                .matrix = "L,R,C,LFE,BL,BR",
         };
 
 	return (ao_open_live(driver_id, &out_fmt, dev_opts));
+}
+
+static int
+test_audio_out(int driver_id, ao_option *dev_opts)
+{
+	struct chan_map {
+		const char *name;
+                int freq;
+                int idx;
+	} map[] = {
+		/* This needs to match the order in open_output(). */
+		{ "left",       500, 0 },
+		{ "center",     500, 2 },
+		{ "right",      500, 1 },
+		{ "rear right", 500, 5 },
+		{ "rear left",  500, 4 },
+		{ "sub",         50, 3 }
+	};
+
+        ao_device *odev = open_output(driver_id, dev_opts, 16, 6, 48000);
+	if (!odev)
+		errx(1, "cannot open audio output");
+
+	for (int ch = 0; ch < 6; ++ch) {
+		const size_t buflen = 4800; /* 1/10 of a second */
+		int16_t buf[buflen * 6];
+
+		printf("channel %d: %s\n", map[ch].idx, map[ch].name);
+
+		/* prepare sine samples */
+		memset(buf, 0, sizeof(buf));
+		for (int i = 0; i < buflen; ++i) {
+			buf[i * 6 + map[ch].idx] = INT16_MAX / 10 * cos(2 * M_PI * map[ch].freq * i / 48000.0);
+		}
+
+		/* play for 2 sec, 1 sec pause */
+		for (int i = 0; i < 30; ++i) {
+			if (i == 20) {
+				/* now pause */
+				memset(buf, 0, sizeof(buf));
+			}
+			if (!ao_play(odev, (char *)buf, sizeof(buf)))
+				errx(1, "cannot play test audio");
+		}
+	}
+
+	return (0);
 }
 
 int
@@ -136,6 +183,11 @@ main(int argc, char **argv)
         if (out_driver_id < 0)
                 errx(1, "invalid output driver `%s'",
                      out_driver_name ? out_driver_name : "default");
+
+	if (opt_test) {
+		exit(test_audio_out(out_driver_id, out_dev_opts));
+		/* NOTREACHED */
+	}
 
         AVInputFormat *alsa_fmt = av_find_input_format("alsa");
 	if (!alsa_fmt)
