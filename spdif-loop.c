@@ -19,6 +19,8 @@ struct alsa_read_state {
 	int		 offset;
 };
 
+static int debug_data;
+
 static void
 usage(void)
 {
@@ -51,6 +53,28 @@ alsa_reader(void *data, uint8_t *buf, int buf_size)
                 read_size += datsize;
                 buf += datsize;
                 buf_size -= datsize;
+
+                if (debug_data) {
+                        static int had_zeros = 0;
+                        for (int i = 0; i < read_size; ++i) {
+                                const char zeros[16] = {0};
+                                if (i % 16 == 0 && read_size - i >= 16 &&
+                                    memcmp((char *)buf + i, zeros, 16) == 0) {
+                                        i += 15;
+                                        if (had_zeros && had_zeros % 10000 == 0)
+                                                printf("  (%d)\n", had_zeros * 16);
+                                        if (!had_zeros)
+                                                printf("...\n");
+                                        had_zeros++;
+                                        continue;
+                                }
+                                if (had_zeros)
+                                        printf("  (%d)\n", had_zeros * 16);
+                                had_zeros = 0;
+                                printf("%02x%s", ((unsigned char *)buf)[i],
+                                       (i + 1) % 16 == 0 ? "\n" : " ");
+                        }
+                }
 
                 if (st->offset >= st->pkt.size)
                         av_free_packet(&st->pkt);
@@ -149,7 +173,7 @@ main(int argc, char **argv)
         char *out_driver_name = NULL;
         char *out_dev_name = NULL;
 
-	for (int opt = 0; (opt = getopt(argc, argv, "d:hi:o:t")) != -1;) {
+	for (int opt = 0; (opt = getopt(argc, argv, "d:hi:o:tv")) != -1;) {
 		switch (opt) {
 		case 'd':
 			out_driver_name = optarg;
@@ -163,6 +187,9 @@ main(int argc, char **argv)
 		case 't':
 			opt_test = 1;
 			break;
+                case 'v':
+                        debug_data = 1;
+                        break;
 		default:
 			usage();
 			/* NOTREACHED */
