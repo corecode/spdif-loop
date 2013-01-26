@@ -165,7 +165,7 @@ main(int argc, char **argv)
 	}
 	argc -= optind;
 	argv += optind;
-		
+
 	if (argc != 0)
 		usage();
 
@@ -294,7 +294,7 @@ retry:
 		if (!got_frame)
 			continue;
 
-		
+
 		if (!out_dev) {
 			/**
 			 * We open the output only here, because we need a full frame decoded
@@ -332,11 +332,11 @@ retry:
 		printf("          \n");
 		//printf("%d\n", max);
 #endif
-			
+
 		if (!ao_play(out_dev, (void *)frame.data[0], framesize)) {
 			goto retry;
 		}
 	}
-	
+
 	return (0);
 }
