@@ -36,49 +36,49 @@ alsa_reader(void *data, uint8_t *buf, int buf_size)
 	struct alsa_read_state *st = data;
 	int read_size = 0;
 
-        while (buf_size > 0) {
-                if (st->pkt.size <= 0) {
-                        int ret = av_read_frame(st->ctx, &st->pkt);
-                        st->offset = 0;
+	while (buf_size > 0) {
+		if (st->pkt.size <= 0) {
+			int ret = av_read_frame(st->ctx, &st->pkt);
+			st->offset = 0;
 
-                        if (ret != 0)
-                                return (ret);
-                }
+			if (ret != 0)
+				return (ret);
+		}
 
-                int pkt_left = st->pkt.size - st->offset;
-                int datsize = buf_size < pkt_left ? buf_size : pkt_left;
+		int pkt_left = st->pkt.size - st->offset;
+		int datsize = buf_size < pkt_left ? buf_size : pkt_left;
 
-                memcpy(buf, st->pkt.data + st->offset, datsize);
-                st->offset += datsize;
-                read_size += datsize;
-                buf += datsize;
-                buf_size -= datsize;
+		memcpy(buf, st->pkt.data + st->offset, datsize);
+		st->offset += datsize;
+		read_size += datsize;
+		buf += datsize;
+		buf_size -= datsize;
 
-                if (debug_data) {
-                        static int had_zeros = 0;
-                        for (int i = 0; i < read_size; ++i) {
-                                const char zeros[16] = {0};
-                                if (i % 16 == 0 && read_size - i >= 16 &&
-                                    memcmp((char *)buf + i, zeros, 16) == 0) {
-                                        i += 15;
-                                        if (had_zeros && had_zeros % 10000 == 0)
-                                                printf("  (%d)\n", had_zeros * 16);
-                                        if (!had_zeros)
-                                                printf("...\n");
-                                        had_zeros++;
-                                        continue;
-                                }
-                                if (had_zeros)
-                                        printf("  (%d)\n", had_zeros * 16);
-                                had_zeros = 0;
-                                printf("%02x%s", ((unsigned char *)buf)[i],
-                                       (i + 1) % 16 == 0 ? "\n" : " ");
-                        }
-                }
+		if (debug_data) {
+			static int had_zeros = 0;
+			for (int i = 0; i < read_size; ++i) {
+				const char zeros[16] = {0};
+				if (i % 16 == 0 && read_size - i >= 16 &&
+				    memcmp((char *)buf + i, zeros, 16) == 0) {
+					i += 15;
+					if (had_zeros && had_zeros % 10000 == 0)
+						printf("  (%d)\n", had_zeros * 16);
+					if (!had_zeros)
+						printf("...\n");
+					had_zeros++;
+					continue;
+				}
+				if (had_zeros)
+					printf("  (%d)\n", had_zeros * 16);
+				had_zeros = 0;
+				printf("%02x%s", ((unsigned char *)buf)[i],
+				       (i + 1) % 16 == 0 ? "\n" : " ");
+			}
+		}
 
-                if (st->offset >= st->pkt.size)
-                        av_free_packet(&st->pkt);
-        }
+		if (st->offset >= st->pkt.size)
+			av_free_packet(&st->pkt);
+	}
 
 	return (read_size);
 }
@@ -102,18 +102,18 @@ probe_codec(AVFormatContext *s)
 static ao_device *
 open_output(int driver_id, ao_option *dev_opts, int bits, int channels, int sample_rate)
 {
-        printf("%d bit, %d channels, %dHz\n",
-               bits,
-               channels,
-               sample_rate);
+	printf("%d bit, %d channels, %dHz\n",
+	       bits,
+	       channels,
+	       sample_rate);
 
-        ao_sample_format out_fmt = {
-                .bits = bits,
-                .channels = channels,
-                .rate = sample_rate,
-                .byte_format = AO_FMT_NATIVE,
-                .matrix = "L,R,C,LFE,BL,BR",
-        };
+	ao_sample_format out_fmt = {
+		.bits = bits,
+		.channels = channels,
+		.rate = sample_rate,
+		.byte_format = AO_FMT_NATIVE,
+		.matrix = "L,R,C,LFE,BL,BR",
+	};
 
 	return (ao_open_live(driver_id, &out_fmt, dev_opts));
 }
@@ -123,19 +123,19 @@ test_audio_out(int driver_id, ao_option *dev_opts)
 {
 	struct chan_map {
 		const char *name;
-                int freq;
-                int idx;
+		int freq;
+		int idx;
 	} map[] = {
 		/* This needs to match the order in open_output(). */
-		{ "left",       500, 0 },
-		{ "center",     500, 2 },
-		{ "right",      500, 1 },
+		{ "left",	500, 0 },
+		{ "center",	500, 2 },
+		{ "right",	500, 1 },
 		{ "rear right", 500, 5 },
-		{ "rear left",  500, 4 },
-		{ "sub",         50, 3 }
+		{ "rear left",	500, 4 },
+		{ "sub",	 50, 3 }
 	};
 
-        ao_device *odev = open_output(driver_id, dev_opts, 16, 6, 48000);
+	ao_device *odev = open_output(driver_id, dev_opts, 16, 6, 48000);
 	if (!odev)
 		errx(1, "cannot open audio output");
 
@@ -169,9 +169,9 @@ int
 main(int argc, char **argv)
 {
 	int opt_test = 0;
-        char *alsa_dev_name = NULL;
-        char *out_driver_name = NULL;
-        char *out_dev_name = NULL;
+	char *alsa_dev_name = NULL;
+	char *out_driver_name = NULL;
+	char *out_dev_name = NULL;
 
 	for (int opt = 0; (opt = getopt(argc, argv, "d:hi:o:tv")) != -1;) {
 		switch (opt) {
@@ -187,9 +187,9 @@ main(int argc, char **argv)
 		case 't':
 			opt_test = 1;
 			break;
-                case 'v':
-                        debug_data = 1;
-                        break;
+		case 'v':
+			debug_data = 1;
+			break;
 		default:
 			usage();
 			/* NOTREACHED */
@@ -217,39 +217,39 @@ main(int argc, char **argv)
 			errx(1, "cannot set output device `%s'", out_dev_name);
 	}
 
-        int out_driver_id = ao_default_driver_id();
-        if (out_driver_name)
-                out_driver_id = ao_driver_id(out_driver_name);
-        if (out_driver_id < 0)
-                errx(1, "invalid output driver `%s'",
-                     out_driver_name ? out_driver_name : "default");
+	int out_driver_id = ao_default_driver_id();
+	if (out_driver_name)
+		out_driver_id = ao_driver_id(out_driver_name);
+	if (out_driver_id < 0)
+		errx(1, "invalid output driver `%s'",
+		     out_driver_name ? out_driver_name : "default");
 
 	if (opt_test) {
 		exit(test_audio_out(out_driver_id, out_dev_opts));
 		/* NOTREACHED */
 	}
 
-        AVInputFormat *alsa_fmt = av_find_input_format("alsa");
+	AVInputFormat *alsa_fmt = av_find_input_format("alsa");
 	if (!alsa_fmt)
 		errx(1, "cannot find alsa input driver");
 
-        AVInputFormat *spdif_fmt = av_find_input_format("spdif");
-        if (!spdif_fmt)
-                errx(1, "cannot find spdif demux driver");
+	AVInputFormat *spdif_fmt = av_find_input_format("spdif");
+	if (!spdif_fmt)
+		errx(1, "cannot find spdif demux driver");
 
-        const int alsa_buf_size = IO_BUFFER_SIZE;
-        unsigned char *alsa_buf = av_malloc(alsa_buf_size);
-        if (!alsa_buf)
-                errx(1, "cannot allocate input buffer");
+	const int alsa_buf_size = IO_BUFFER_SIZE;
+	unsigned char *alsa_buf = av_malloc(alsa_buf_size);
+	if (!alsa_buf)
+		errx(1, "cannot allocate input buffer");
 
-        AVFormatContext *spdif_ctx = NULL;
-        AVFormatContext *alsa_ctx = NULL;
-        ao_device *out_dev = NULL;
+	AVFormatContext *spdif_ctx = NULL;
+	AVFormatContext *alsa_ctx = NULL;
+	ao_device *out_dev = NULL;
 
 	if (0) {
 retry:
-                printf("failure...\n");
-                if (spdif_ctx)
+		printf("failure...\n");
+		if (spdif_ctx)
 			avformat_close_input(&spdif_ctx);
 		if (alsa_ctx)
 			avformat_close_input(&alsa_ctx);
@@ -263,8 +263,8 @@ retry:
 
 
 	spdif_ctx = avformat_alloc_context();
-        if (!spdif_ctx)
-                errx(1, "cannot allocate spdif context");
+	if (!spdif_ctx)
+		errx(1, "cannot allocate spdif context");
 
 	if (avformat_open_input(&alsa_ctx, alsa_dev_name, alsa_fmt, NULL) != 0)
 		errx(1, "cannot open alsa input");
@@ -334,7 +334,7 @@ retry:
 			 * We open the output only here, because we need a full frame decoded
 			 * before we can know the output format.
 			 */
-                        out_dev = open_output(out_driver_id,
+			out_dev = open_output(out_driver_id,
 					      out_dev_opts,
 					      av_get_bytes_per_sample(spdif_codec_ctx->sample_fmt) * 8,
 					      spdif_codec_ctx->channels,
@@ -360,10 +360,10 @@ retry:
 				max = v;
 		}
 
-		Debug latency
+		/* Debug latency */
 		for (int i = 0; i < max / 100; ++i)
 			putchar('*');
-		printf("          \n");
+		printf("\n");
 		//printf("%d\n", max);
 #endif
 
