@@ -251,7 +251,9 @@ retry:
 
 	enum CodecID spdif_codec_id = probe_codec(spdif_ctx);
 
+#if HAVE_AVCODEC_GET_NAME
 	printf("detected spdif codec %s\n", avcodec_get_name(spdif_codec_id));
+#endif
 
 	AVCodec *spdif_codec = avcodec_find_decoder(spdif_codec_id);
 	if (!spdif_codec) {
