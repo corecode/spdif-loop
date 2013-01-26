@@ -32,26 +32,31 @@ static int
 alsa_reader(void *data, uint8_t *buf, int buf_size)
 {
 	struct alsa_read_state *st = data;
-	int ret;
+	int read_size = 0;
 
-	if (st->pkt.size <= 0) {
-		ret = av_read_frame(st->ctx, &st->pkt);
-		st->offset = 0;
+        while (buf_size > 0) {
+                if (st->pkt.size <= 0) {
+                        int ret = av_read_frame(st->ctx, &st->pkt);
+                        st->offset = 0;
 
-		if (ret != 0)
-			return (ret);
-	}
+                        if (ret != 0)
+                                return (ret);
+                }
 
-	int pkt_left = st->pkt.size - st->offset;
-	int datsize = buf_size < pkt_left ? buf_size : pkt_left;
+                int pkt_left = st->pkt.size - st->offset;
+                int datsize = buf_size < pkt_left ? buf_size : pkt_left;
 
-	memcpy(buf, st->pkt.data + st->offset, datsize);
-	ret = datsize;
+                memcpy(buf, st->pkt.data + st->offset, datsize);
+                st->offset += datsize;
+                read_size += datsize;
+                buf += datsize;
+                buf_size -= datsize;
 
-	if (datsize == st->pkt.size)
-		av_free_packet(&st->pkt);
+                if (st->offset >= st->pkt.size)
+                        av_free_packet(&st->pkt);
+        }
 
-	return (ret);
+	return (read_size);
 }
 
 static enum CodecID
