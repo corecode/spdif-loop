@@ -16,14 +16,14 @@ Requirements
 
 Build ffmpeg shared library with a minimal set for alsa and AC3 support
 -----
-./configure --enable-shared --disable-static --disable-everything --enable-demuxer=spdif --enable-decoder=ac3 --enable-indev=alsa
-make
+    ./configure --enable-shared --disable-static --disable-everything --enable-demuxer=spdif --enable-decoder=ac3 --enable-indev=alsa
+    make
 
 Build spdif-decoder
 -----
 Prepare CMakeLists.txt - set FFMPEG Var with Path to ffmpeg
-cmake .
-make
+    cmake .
+    make
 
 Run
 ---
