@@ -22,6 +22,7 @@ Build ffmpeg shared library with a minimal set for alsa and AC3 support
 Build spdif-decoder
 -----
 Prepare CMakeLists.txt - set FFMPEG Var with Path to ffmpeg
+
     cmake .
     make
 
