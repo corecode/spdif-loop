@@ -6,13 +6,15 @@ digital surround signal (Dolby Digital), such as an Xbox 360 S or TV, via
 your PC to your 5.1 (analog) stereo.  Like a digital receiver/decoder,
 just in software.
 
+FFMPEG is licenced under the GNU Lesser General Public License version 2.1 and so is 
+this piece of software. 
 
 Requirements
 ------------
 - libasound2-dev
 - libao-dev
 - cmake
-- ffmpeg from Source https://www.ffmpeg.org/download.html (tested with 2.6.2)
+- ffmpeg from Source https://www.ffmpeg.org/download.html (tested with 4.3.1)
 
 Build ffmpeg shared library with a minimal set for alsa and AC3 support
 -----
@@ -21,7 +23,7 @@ Build ffmpeg shared library with a minimal set for alsa and AC3 support
 
 Build spdif-decoder
 -----
-Prepare CMakeLists.txt - set FFMPEG Var with Path to ffmpeg
+Prepare CMakeLists.txt - set FFMPEG Var with Path to ffmpeg (if not in ../ffmpeg-4.3.1)
 
     cmake .
     make
@@ -45,11 +47,7 @@ I had to use `amixer` to set the capture source to SPIF.  In this case
     amixer -c Device set 'PCM Capture Source' 'IEC958 In'    # set input
 
 
-Contact
--------
-
-Sebastian Morgenstern <Sebastian.Morgenstern@gmail.com>
-
 Thanks to
 -------
+Sebastian Morgenstern <Sebastian.Morgenstern@gmail.com>
 Simon Schubert <2@0x2c.org>
