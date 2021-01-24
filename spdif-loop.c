@@ -239,17 +239,6 @@ retry:
 		int r = my_spdif_read_packet(spdif_ctx, &pkt, (uint8_t*)resamples, IO_BUFFER_SIZE, &garbagefilled);
 
 		if(r == 0){
-			//Play rest of garbage before decode newly found codec
-			if(		garbagefilled > 0
-					&& codecHanlder.currentCodecID == AV_CODEC_ID_NONE
-					&& codecHanlder.currentChannelCount == 2
-					&& codecHanlder.currentSampleRate == 48000
-					&& out_dev != NULL){
-				if(!ao_play(out_dev, resamples, garbagefilled)){
-					goto retry;
-				}
-			}
-
 			if(CodecHandler_loadCodec(&codecHanlder, spdif_ctx)!=0){
 				goto retry;
 			}
@@ -265,8 +254,7 @@ retry:
 			if(pkt.size != 0){
 				printf("still some bytes left %d\n",pkt.size);
 			}
-
-		}else{
+		} else {
 			codecHanlder.currentCodecID = AV_CODEC_ID_NONE;
 			if(codecHanlder.currentChannelCount != 2 ||
 					codecHanlder.currentSampleRate != 48000){
