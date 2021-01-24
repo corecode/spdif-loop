@@ -194,7 +194,6 @@ retry:
 		printf("retrying.\n");
 	}
 
-
 	spdif_ctx = avformat_alloc_context();
 	if (!spdif_ctx)
 		errx(1, "cannot allocate S/PDIF context");
@@ -251,9 +250,10 @@ retry:
 				printf("still some bytes left %d\n",pkt.size);
 			}
 		} else {
-			codecHanlder.currentCodecID = AV_CODEC_ID_NONE;
-			if(codecHanlder.currentChannelCount != 2 ||
-					codecHanlder.currentSampleRate != 48000){
+			if(codecHanlder.currentCodecID != AV_CODEC_ID_NONE ||
+				codecHanlder.currentChannelCount != 2 ||
+				codecHanlder.currentSampleRate != 48000){
+
 				printf("Detected S/PDIF uncompressed audio\n");
 
 				if (out_dev) {
@@ -261,6 +261,7 @@ retry:
 					out_dev = NULL;
 				}
 			}
+			codecHanlder.currentCodecID = AV_CODEC_ID_NONE;
 			codecHanlder.currentChannelCount = 2;
 			codecHanlder.currentSampleRate = 48000;
 			codecHanlder.currentChannelLayout = 0;
