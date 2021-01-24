@@ -167,7 +167,7 @@ main(int argc, char **argv)
 
 	AVInputFormat *spdif_fmt = av_find_input_format("spdif");
 	if (!spdif_fmt)
-		errx(1, "cannot find spdif demux driver");
+		errx(1, "cannot find S/PDIF demux driver");
 
 	const int alsa_buf_size = IO_BUFFER_SIZE;
 	unsigned char *alsa_buf = av_malloc(alsa_buf_size);
@@ -182,7 +182,6 @@ main(int argc, char **argv)
 
 	if (0) {
 retry:
-		printf("failure...\n");
 		if (spdif_ctx)
 			avformat_close_input(&spdif_ctx);
 		if (alsa_ctx)
@@ -198,7 +197,7 @@ retry:
 
 	spdif_ctx = avformat_alloc_context();
 	if (!spdif_ctx)
-		errx(1, "cannot allocate spdif context");
+		errx(1, "cannot allocate S/PDIF context");
 
 	if (avformat_open_input(&alsa_ctx, alsa_dev_name, alsa_fmt, NULL) != 0)
 		errx(1, "cannot open alsa input");
@@ -218,13 +217,9 @@ retry:
 		errx(1, "cannot set up alsa reader");
 
 	if (avformat_open_input(&spdif_ctx, "internal", spdif_fmt, NULL) != 0)
-		errx(1, "cannot open spdif input");
+		errx(1, "cannot open S/PDIF input");
 
 	av_dump_format(alsa_ctx, 0, alsa_dev_name, 0);
-
-#ifdef HAVE_AVCODEC_GET_NAME
-	printf("detected spdif codec %s\n", avcodec_get_name(spdif_codec_id));
-#endif
 
 	AVPacket pkt = {.size = 0, .data = NULL};
 	av_init_packet(&pkt);
@@ -240,6 +235,7 @@ retry:
 
 		if(r == 0){
 			if(CodecHandler_loadCodec(&codecHanlder, spdif_ctx)!=0){
+				printf("Could not load codec %s.\n", avcodec_get_name(codecHanlder.currentCodecID));
 				goto retry;
 			}
 
@@ -250,6 +246,7 @@ retry:
 					ao_close(out_dev);
 					out_dev = NULL;
 				}
+				printf("Detected S/PDIF codec %s\n", avcodec_get_name(codecHanlder.currentCodecID));
 			}
 			if(pkt.size != 0){
 				printf("still some bytes left %d\n",pkt.size);
@@ -258,6 +255,8 @@ retry:
 			codecHanlder.currentCodecID = AV_CODEC_ID_NONE;
 			if(codecHanlder.currentChannelCount != 2 ||
 					codecHanlder.currentSampleRate != 48000){
+				printf("Detected S/PDIF uncompressed audio\n");
+
 				if (out_dev) {
 					ao_close(out_dev);
 					out_dev = NULL;
@@ -280,6 +279,7 @@ retry:
 		}
 		//found wav
 		if(!ao_play(out_dev, resamples, howmuch)){
+			printf("Could not play audio to output device...");
 			goto retry;
 		}
 	}
