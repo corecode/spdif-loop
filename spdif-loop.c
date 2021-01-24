@@ -178,6 +178,8 @@ main(int argc, char **argv)
 	AVFormatContext *alsa_ctx = NULL;
 	ao_device *out_dev = NULL;
 
+    char *resamples = malloc(1*1024*1024);
+
 	if (0) {
 retry:
 		printf("failure...\n");
@@ -211,7 +213,6 @@ retry:
     	errx(1, "cannot open avio_alloc_context");
     }
 
-
 	spdif_ctx->pb = avio_alloc_context(alsa_buf, alsa_buf_size, 0, &read_state, alsa_reader, NULL, NULL);
 	if (!spdif_ctx->pb)
 		errx(1, "cannot set up alsa reader");
@@ -227,8 +228,6 @@ retry:
 
 	AVPacket pkt = {.size = 0, .data = NULL};
 	av_init_packet(&pkt);
-
-    char *resamples= malloc(1*1024*1024);
 
     uint32_t howmuch = 0;
 
