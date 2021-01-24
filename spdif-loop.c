@@ -230,8 +230,7 @@ retry:
     CodecHandler_init(&codecHanlder);
 	printf("start loop\n");
 	while (1) {
-		int garbagefilled = 0;
-		int r = my_spdif_read_packet(spdif_ctx, &pkt, (uint8_t*)resamples, IO_BUFFER_SIZE, &garbagefilled);
+		int r = my_spdif_read_packet(spdif_ctx, &pkt, (uint8_t*)resamples, IO_BUFFER_SIZE, &howmuch);
 
 		if(r == 0){
 			if(CodecHandler_loadCodec(&codecHanlder, spdif_ctx)!=0){
@@ -265,7 +264,6 @@ retry:
 			codecHanlder.currentChannelCount = 2;
 			codecHanlder.currentSampleRate = 48000;
 			codecHanlder.currentChannelLayout = 0;
-			howmuch = garbagefilled;
 		}
 
 		if (!out_dev) {
