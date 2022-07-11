@@ -10,7 +10,7 @@ add_executable (spdif-decoder
     spdif-loop.c
 )
 
-SET(FFMPEG /home/sebastian/software/ffmpeg-2.6.1)
+SET(FFMPEG ${CMAKE_CURRENT_SOURCE_DIR}/../ffmpeg-4.3.1)
 
 target_include_directories (spdif-decoder
     PUBLIC ${FFMPEG}
