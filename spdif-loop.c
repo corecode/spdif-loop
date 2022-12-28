@@ -281,6 +281,7 @@ retry:
 			printf("Could not play audio to output device...");
 			goto retry;
 		}
+                 av_packet_unref(&pkt); 
 	}
 	CodecHandler_deinit(&codecHanlder);
 	return (0);
